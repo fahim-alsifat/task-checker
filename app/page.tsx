@@ -57,6 +57,27 @@ export default function Home() {
         });
     };
 
+    // Immediate test - send notification for first pending task
+    const sendTestNow = () => {
+        if (!activeChecklist) return;
+        const pendingTasks = activeChecklist.tasks.filter(t => t.status !== 'completed');
+        if (pendingTasks.length === 0) {
+            alert('No pending tasks!');
+            return;
+        }
+        const task = pendingTasks[0];
+        console.log('[Test] Sending notification for:', task.name);
+        try {
+            new Notification(`🔔 TEST: ${task.name}`, {
+                body: `Scheduled: ${task.scheduledTime}`,
+                icon: '/favicon.ico'
+            });
+        } catch (err) {
+            console.error('[Test] Failed:', err);
+            alert('Notification failed: ' + err);
+        }
+    };
+
     const handleAddTask = () => {
         setEditingTask(null);
         setModalOpen(true);
@@ -146,9 +167,18 @@ export default function Home() {
                                         🔔 Enable Notifications
                                     </button>
                                 ) : (
-                                    <span className="text-xs text-emerald-400 px-2 py-1 bg-emerald-500/10 rounded-lg border border-emerald-500/20">
-                                        ✅ Notifications On
-                                    </span>
+                                    <>
+                                        <span className="text-xs text-emerald-400 px-2 py-1 bg-emerald-500/10 rounded-lg border border-emerald-500/20">
+                                            ✅ On
+                                        </span>
+                                        <button
+                                            onClick={sendTestNow}
+                                            className="btn btn-secondary text-xs px-2"
+                                            title="Send test notification now"
+                                        >
+                                            🧪 Test
+                                        </button>
+                                    </>
                                 )}
                                 <button onClick={handleAddTask} className="btn btn-primary">
                                     <PlusIcon />

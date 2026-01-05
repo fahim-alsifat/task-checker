@@ -105,16 +105,28 @@ export const useTaskNotifications = (
 
     // Check tasks every 10 seconds (for testing) -> change to 60000 for production
     useEffect(() => {
-        if (!isSupported || permission !== 'granted') {
-            console.log('[Notifications] Not active - supported:', isSupported, 'permission:', permission);
+        if (!isSupported) {
+            console.log('[Notifications] Not supported');
             return;
         }
 
         const checkTasks = () => {
+            // Read permission directly from browser (not stale state)
+            const currentPermission = typeof window !== 'undefined' && 'Notification' in window
+                ? Notification.permission
+                : 'default';
+
+            if (currentPermission !== 'granted') {
+                console.log('[Notifications] Permission not granted:', currentPermission);
+                return;
+            }
+
             const currentTime = getCurrentTimeString();
-            console.log('[Notifications] Checking tasks at', currentTime);
+            console.log('[Notifications] Checking tasks at', currentTime, '- Checklists:', checklists.length);
 
             checklists.forEach(checklist => {
+                console.log('[Notifications] Checklist:', checklist.name, 'notifications:', checklist.notifications);
+
                 // Skip if notifications disabled for this checklist
                 if (!checklist.notifications) return;
 
@@ -127,13 +139,18 @@ export const useTaskNotifications = (
 
                     // Check if task time matches current time
                     if (task.scheduledTime === currentTime) {
-                        console.log('[Notifications] Sending notification for:', task.name);
-                        sendNotification(`⏰ Task Due: ${task.name}`, {
-                            body: `Time: ${task.scheduledTime} • ${checklist.name}`,
-                            tag: task.id,
-                        });
-                        notifiedTasks.current.add(task.id);
-                        saveNotifiedTasks();
+                        console.log('[Notifications] 🔔 Sending notification for:', task.name);
+                        try {
+                            new Notification(`⏰ Task Due: ${task.name}`, {
+                                body: `Time: ${task.scheduledTime} • ${checklist.name}`,
+                                icon: '/favicon.ico',
+                                tag: task.id,
+                            });
+                            notifiedTasks.current.add(task.id);
+                            saveNotifiedTasks();
+                        } catch (err) {
+                            console.error('[Notifications] Failed:', err);
+                        }
                     }
                 });
             });
@@ -144,7 +161,7 @@ export const useTaskNotifications = (
         const interval = setInterval(checkTasks, 10000);
 
         return () => clearInterval(interval);
-    }, [checklists, permission, isSupported, sendNotification, saveNotifiedTasks]);
+    }, [checklists, isSupported, saveNotifiedTasks]);
 
     // Reset notified tasks at midnight
     useEffect(() => {
