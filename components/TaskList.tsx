@@ -1,0 +1,202 @@
+'use client';
+
+import React, { useState, useMemo } from 'react';
+import { useChecklist } from '@/context/ChecklistContext';
+import { Task, TaskCategory, getTimePeriod, TimePeriod, TIME_PERIOD_CONFIG, sortTasksByTime } from '@/types';
+import TaskItem from './TaskItem';
+
+const PERIOD_ORDER: TimePeriod[] = ['morning', 'afternoon', 'evening', 'night'];
+
+interface TaskListProps {
+    onEditTask: (task: Task) => void;
+}
+
+const TaskList: React.FC<TaskListProps> = ({ onEditTask }) => {
+    const { activeChecklist } = useChecklist();
+    const [categoryFilter, setCategoryFilter] = useState<TaskCategory | 'all'>('all');
+    const [showCompleted, setShowCompleted] = useState(true);
+
+    // Get current time for highlighting
+    const currentTime = useMemo(() => {
+        const now = new Date();
+        return `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
+    }, []);
+
+    // Filter and group tasks
+    const { groupedTasks, filteredCount } = useMemo(() => {
+        const groups: Record<TimePeriod, Task[]> = {
+            morning: [],
+            afternoon: [],
+            evening: [],
+            night: [],
+        };
+
+        if (!activeChecklist) return { groupedTasks: groups, filteredCount: 0 };
+
+        let tasks = [...activeChecklist.tasks];
+
+        // Apply filters
+        if (categoryFilter !== 'all') {
+            tasks = tasks.filter(t => t.category === categoryFilter);
+        }
+        if (!showCompleted) {
+            tasks = tasks.filter(t => t.status !== 'completed');
+        }
+
+        // Sort and group
+        tasks = sortTasksByTime(tasks);
+        tasks.forEach(task => {
+            const period = getTimePeriod(task.scheduledTime);
+            groups[period].push(task);
+        });
+
+        return { groupedTasks: groups, filteredCount: tasks.length };
+    }, [activeChecklist, categoryFilter, showCompleted]);
+
+    // Find current and upcoming tasks
+    const { currentTaskId, upcomingTaskIds } = useMemo(() => {
+        if (!activeChecklist) return { currentTaskId: null, upcomingTaskIds: [] as string[] };
+
+        const pendingTasks = sortTasksByTime(
+            activeChecklist.tasks.filter(t => t.status === 'pending')
+        );
+
+        // Find tasks at or after current time
+        const futureOrCurrent = pendingTasks.filter(t => t.scheduledTime >= currentTime);
+        const tasksToHighlight = futureOrCurrent.length > 0 ? futureOrCurrent : pendingTasks;
+
+        return {
+            currentTaskId: tasksToHighlight[0]?.id || null,
+            upcomingTaskIds: tasksToHighlight.slice(1, 3).map(t => t.id),
+        };
+    }, [activeChecklist, currentTime]);
+
+    if (!activeChecklist) {
+        return (
+            <div className="empty-state">
+                <div className="empty-state-icon">📋</div>
+                <div className="empty-state-title">Select a checklist</div>
+                <div className="empty-state-desc">Choose a checklist from the sidebar or create a new one to get started.</div>
+            </div>
+        );
+    }
+
+    const categories: { value: TaskCategory | 'all'; label: string }[] = [
+        { value: 'all', label: 'All' },
+        { value: 'news', label: 'News' },
+        { value: 'solution', label: 'Solution' },
+        { value: 'image', label: 'Image' },
+        { value: 'prompt', label: 'Prompt' },
+        { value: 'other', label: 'Other' },
+    ];
+
+    const completedCount = activeChecklist.tasks.filter(t => t.status === 'completed').length;
+    const hasFilters = categoryFilter !== 'all' || !showCompleted;
+
+    return (
+        <div className="animate-fadeIn">
+            {/* Filters */}
+            <div className="flex flex-wrap items-center gap-2 mb-5">
+                {/* Category filters */}
+                <div className="flex gap-1 flex-wrap">
+                    {categories.map(cat => (
+                        <button
+                            key={cat.value}
+                            onClick={() => setCategoryFilter(cat.value)}
+                            className={`
+                px-3 py-1.5 rounded-lg text-xs font-medium transition-all
+                ${categoryFilter === cat.value
+                                    ? 'bg-blue-600 text-white'
+                                    : 'bg-white/5 text-white/50 hover:bg-white/10 hover:text-white/70'
+                                }
+              `}
+                        >
+                            {cat.label}
+                        </button>
+                    ))}
+                </div>
+
+                {/* Spacer */}
+                <div className="flex-1" />
+
+                {/* Show/hide completed toggle */}
+                {completedCount > 0 && (
+                    <button
+                        onClick={() => setShowCompleted(!showCompleted)}
+                        className={`
+              px-3 py-1.5 rounded-lg text-xs font-medium transition-all
+              ${showCompleted
+                                ? 'bg-white/5 text-white/50 hover:bg-white/10'
+                                : 'bg-emerald-500/20 text-emerald-400'
+                            }
+            `}
+                    >
+                        {showCompleted ? `Hide completed (${completedCount})` : `Show completed (${completedCount})`}
+                    </button>
+                )}
+            </div>
+
+            {/* Task groups */}
+            {PERIOD_ORDER.map(period => {
+                const tasks = groupedTasks[period];
+                if (tasks.length === 0) return null;
+
+                const config = TIME_PERIOD_CONFIG[period];
+
+                return (
+                    <div key={period} className="mb-6 animate-slideUp">
+                        {/* Period header */}
+                        <div className="time-period">
+                            <span className="time-period-icon">{config.icon}</span>
+                            <span className="time-period-label">{config.label}</span>
+                            <span className="time-period-count">{tasks.length}</span>
+                        </div>
+
+                        {/* Tasks */}
+                        <div className="space-y-2">
+                            {tasks.map(task => (
+                                <TaskItem
+                                    key={task.id}
+                                    task={task}
+                                    onEdit={onEditTask}
+                                    isCurrentTask={task.id === currentTaskId}
+                                    isUpcoming={upcomingTaskIds.includes(task.id)}
+                                />
+                            ))}
+                        </div>
+                    </div>
+                );
+            })}
+
+            {/* Empty states */}
+            {activeChecklist.tasks.length === 0 && (
+                <div className="empty-state">
+                    <div className="empty-state-icon">✨</div>
+                    <div className="empty-state-title">No tasks yet</div>
+                    <div className="empty-state-desc">Click the "Add Task" button to create your first task.</div>
+                </div>
+            )}
+
+            {activeChecklist.tasks.length > 0 && filteredCount === 0 && (
+                <div className="empty-state">
+                    <div className="empty-state-icon">🔍</div>
+                    <div className="empty-state-title">No matching tasks</div>
+                    <div className="empty-state-desc">
+                        {hasFilters ? (
+                            <button
+                                onClick={() => { setCategoryFilter('all'); setShowCompleted(true); }}
+                                className="text-blue-400 hover:underline"
+                            >
+                                Clear filters
+                            </button>
+                        ) : (
+                            'Try adjusting your filters.'
+                        )}
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+};
+
+export default TaskList;

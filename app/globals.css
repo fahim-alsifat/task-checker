@@ -1,0 +1,369 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --bg-primary: #09090b;
+  --bg-secondary: #18181b;
+  --bg-tertiary: #27272a;
+  --bg-hover: #3f3f46;
+  --border-color: #27272a;
+  --border-light: #3f3f46;
+  --text-primary: #fafafa;
+  --text-secondary: #a1a1aa;
+  --text-muted: #71717a;
+  --accent: #3b82f6;
+  --accent-hover: #2563eb;
+  --success: #22c55e;
+  --warning: #eab308;
+  --danger: #ef4444;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background: linear-gradient(180deg, #09090b 0%, #0c0c0f 100%);
+  color: var(--text-primary);
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  min-height: 100vh;
+}
+
+/* Smooth scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #3f3f46;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #52525b;
+}
+
+/* Focus styles */
+*:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* Button base */
+.btn {
+  @apply inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl font-medium text-sm transition-all duration-200;
+}
+
+.btn-primary {
+  @apply bg-gradient-to-r from-blue-600 to-blue-500 text-white hover:from-blue-500 hover:to-blue-400 shadow-lg shadow-blue-500/25 active:scale-[0.98];
+}
+
+.btn-secondary {
+  @apply bg-zinc-800 text-zinc-300 hover:bg-zinc-700 hover:text-white border border-zinc-700;
+}
+
+.btn-ghost {
+  @apply text-zinc-400 hover:text-white hover:bg-zinc-800;
+}
+
+.btn-danger {
+  @apply bg-red-500/10 text-red-400 hover:bg-red-500/20 border border-red-500/20;
+}
+
+/* Card styles */
+.card {
+  @apply bg-zinc-900/80 backdrop-blur-sm border border-zinc-800 rounded-2xl shadow-xl;
+}
+
+.card-hover {
+  @apply transition-all duration-200 hover:border-zinc-700 hover:bg-zinc-800/50;
+}
+
+/* Input styles */
+.input {
+  @apply w-full px-4 py-3 bg-zinc-900 border border-zinc-800 rounded-xl text-white text-sm placeholder:text-zinc-500 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all;
+}
+
+.input-lg {
+  @apply px-4 py-3.5 text-base;
+}
+
+/* Badge styles */
+.badge {
+  @apply inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-medium border;
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-12px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes checkPop {
+  0% {
+    transform: scale(0.8);
+  }
+
+  50% {
+    transform: scale(1.2);
+  }
+
+  100% {
+    transform: scale(1);
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+@keyframes pulse {
+
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.5;
+  }
+}
+
+@keyframes glow {
+
+  0%,
+  100% {
+    box-shadow: 0 0 20px rgba(59, 130, 246, 0.3);
+  }
+
+  50% {
+    box-shadow: 0 0 30px rgba(59, 130, 246, 0.5);
+  }
+}
+
+.animate-fadeIn {
+  animation: fadeIn 0.3s ease-out;
+}
+
+.animate-slideUp {
+  animation: slideUp 0.3s ease-out;
+}
+
+.animate-slideDown {
+  animation: slideDown 0.3s ease-out;
+}
+
+.animate-scaleIn {
+  animation: scaleIn 0.25s ease-out;
+}
+
+.animate-checkPop {
+  animation: checkPop 0.3s ease-out;
+}
+
+.animate-shimmer {
+  background: linear-gradient(90deg, #18181b 25%, #27272a 50%, #18181b 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+.animate-glow {
+  animation: glow 2s ease-in-out infinite;
+}
+
+/* Task styles */
+.task-item {
+  @apply card p-4 transition-all duration-200 hover:border-zinc-700;
+}
+
+.task-completed {
+  @apply opacity-50;
+}
+
+.task-completed .task-name {
+  @apply line-through decoration-zinc-500;
+}
+
+.task-current {
+  @apply border-l-[3px] border-l-blue-500 bg-blue-500/5 shadow-lg shadow-blue-500/10;
+}
+
+.task-upcoming {
+  @apply border-l-[3px] border-l-blue-500/30;
+}
+
+/* Checkbox */
+.checkbox {
+  @apply w-5 h-5 rounded-lg border-2 border-zinc-600 flex items-center justify-center cursor-pointer transition-all duration-200;
+}
+
+.checkbox:hover {
+  @apply border-blue-400 bg-blue-500/10;
+}
+
+.checkbox-checked {
+  @apply bg-gradient-to-br from-emerald-500 to-emerald-600 border-emerald-500 shadow-lg shadow-emerald-500/30;
+}
+
+/* Progress bar */
+.progress-bar {
+  @apply h-2.5 bg-zinc-800 rounded-full overflow-hidden;
+}
+
+.progress-fill {
+  @apply h-full bg-gradient-to-r from-blue-600 via-blue-500 to-cyan-400 rounded-full transition-all duration-700 ease-out;
+}
+
+/* Modal */
+.modal-backdrop {
+  @apply fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4;
+}
+
+.modal-content {
+  @apply bg-zinc-900 border border-zinc-800 rounded-2xl w-full max-w-md shadow-2xl shadow-black/50;
+}
+
+/* Sidebar */
+.sidebar {
+  @apply w-72 bg-zinc-950 border-r border-zinc-800/50 flex flex-col h-full;
+}
+
+.sidebar-item {
+  @apply flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer transition-all duration-150;
+}
+
+.sidebar-item:hover {
+  @apply bg-zinc-800/50;
+}
+
+.sidebar-item-active {
+  @apply bg-zinc-800 text-white shadow-lg;
+}
+
+/* Time period header */
+.time-period {
+  @apply flex items-center gap-2 py-3 mb-3;
+}
+
+.time-period-icon {
+  @apply text-xl;
+}
+
+.time-period-label {
+  @apply text-sm font-semibold text-white;
+}
+
+.time-period-count {
+  @apply text-xs px-2 py-0.5 bg-zinc-800 rounded-lg text-zinc-400;
+}
+
+/* Loading skeleton */
+.skeleton {
+  @apply bg-zinc-800 rounded-xl animate-pulse;
+}
+
+/* Empty state */
+.empty-state {
+  @apply flex flex-col items-center justify-center py-20 text-center;
+}
+
+.empty-state-icon {
+  @apply text-6xl mb-4 opacity-40;
+}
+
+.empty-state-title {
+  @apply text-lg font-medium text-zinc-300 mb-2;
+}
+
+.empty-state-desc {
+  @apply text-sm text-zinc-500 max-w-xs;
+}
+
+/* Gradient text */
+.gradient-text {
+  @apply bg-gradient-to-r from-blue-400 via-cyan-400 to-blue-400 bg-clip-text text-transparent;
+}
+
+/* Glass effect */
+.glass {
+  @apply bg-zinc-900/50 backdrop-blur-xl border border-zinc-800/50;
+}
+
+/* Selection */
+::selection {
+  background: rgba(59, 130, 246, 0.4);
+}
+
+/* Feature cards on welcome */
+.feature-card {
+  @apply card p-5 text-center transition-all duration-300 hover:scale-105 hover:border-zinc-700;
+}
+
+/* Toggle switch */
+.toggle {
+  @apply relative w-12 h-7 rounded-full transition-colors duration-200 cursor-pointer;
+}
+
+.toggle-thumb {
+  @apply absolute top-1 w-5 h-5 bg-white rounded-full shadow-lg transition-transform duration-200;
+}
