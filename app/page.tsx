@@ -30,6 +30,28 @@ export default function Home() {
 
     // Initialize task notifications monitoring
     const { permission, isSupported, requestPermission } = useTaskNotifications(checklists);
+    const [notificationsEnabled, setNotificationsEnabled] = useState(false);
+
+    // Enable notification function - requests permission and sends test
+    const enableNotifications = async () => {
+        if (!isSupported) {
+            alert('Browser does not support notifications!');
+            return;
+        }
+        if (permission !== 'granted') {
+            const granted = await requestPermission();
+            if (!granted) {
+                alert('Please allow notifications!');
+                return;
+            }
+        }
+        setNotificationsEnabled(true);
+        // Send test notification
+        new Notification('✅ Notifications Enabled!', {
+            body: 'You will now receive notifications for your scheduled tasks.',
+            icon: '/favicon.ico'
+        });
+    };
 
     const handleAddTask = () => {
         setEditingTask(null);
@@ -110,10 +132,25 @@ export default function Home() {
 
                         {/* Right side - Add task button */}
                         {activeChecklist && (
-                            <button onClick={handleAddTask} className="btn btn-primary">
-                                <PlusIcon />
-                                <span className="hidden sm:inline">Add Task</span>
-                            </button>
+                            <div className="flex items-center gap-2">
+                                {!notificationsEnabled && permission !== 'granted' ? (
+                                    <button
+                                        onClick={enableNotifications}
+                                        className="btn btn-secondary text-xs px-3"
+                                        title="Enable notifications"
+                                    >
+                                        🔔 Enable Notifications
+                                    </button>
+                                ) : (
+                                    <span className="text-xs text-emerald-400 px-2 py-1 bg-emerald-500/10 rounded-lg border border-emerald-500/20">
+                                        ✅ Notifications On
+                                    </span>
+                                )}
+                                <button onClick={handleAddTask} className="btn btn-primary">
+                                    <PlusIcon />
+                                    <span className="hidden sm:inline">Add Task</span>
+                                </button>
+                            </div>
                         )}
                     </div>
                 </header>
