@@ -23,7 +23,7 @@ const CheckIcon = () => (
 );
 
 export default function Home() {
-    const { activeChecklist, checklists, isLoading } = useChecklist();
+    const { activeChecklist, checklists, isLoading, toggleNotifications } = useChecklist();
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const [modalOpen, setModalOpen] = useState(false);
     const [editingTask, setEditingTask] = useState<Task | null>(null);
@@ -44,6 +44,10 @@ export default function Home() {
                 alert('Please allow notifications!');
                 return;
             }
+        }
+        // Also enable notifications for the active checklist
+        if (activeChecklist && !activeChecklist.notifications) {
+            toggleNotifications(activeChecklist.id);
         }
         setNotificationsEnabled(true);
         // Send test notification
