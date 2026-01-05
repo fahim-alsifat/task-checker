@@ -104,6 +104,7 @@ export const useTaskNotifications = (
     }, [notifiedTasksKey]);
 
     // Check tasks every 10 seconds (for testing) -> change to 60000 for production
+    // Check tasks every 10 seconds (check last 2 minutes window to handle throttling)
     useEffect(() => {
         if (!isSupported) {
             console.log('[Notifications] Not supported');
@@ -111,34 +112,37 @@ export const useTaskNotifications = (
         }
 
         const checkTasks = () => {
-            // Read permission directly from browser (not stale state)
+            // Read permission directly
             const currentPermission = typeof window !== 'undefined' && 'Notification' in window
                 ? Notification.permission
                 : 'default';
 
-            if (currentPermission !== 'granted') {
-                console.log('[Notifications] Permission not granted:', currentPermission);
-                return;
-            }
+            if (currentPermission !== 'granted') return;
 
-            const currentTime = getCurrentTimeString();
-            console.log('[Notifications] Checking tasks at', currentTime, '- Checklists:', checklists.length);
+            const now = new Date();
+            const currentHours = now.getHours();
+            const currentMinutes = now.getMinutes();
+            const currentTimeStr = `${String(currentHours).padStart(2, '0')}:${String(currentMinutes).padStart(2, '0')}`;
 
             checklists.forEach(checklist => {
-                console.log('[Notifications] Checklist:', checklist.name, 'notifications:', checklist.notifications);
-
-                // Skip if notifications disabled for this checklist
                 if (!checklist.notifications) return;
 
                 checklist.tasks.forEach(task => {
-                    // Skip completed tasks or already notified
                     if (task.status === 'completed') return;
                     if (notifiedTasks.current.has(task.id)) return;
 
-                    console.log('[Notifications] Task:', task.name, 'scheduled:', task.scheduledTime, 'current:', currentTime);
+                    // Parse task time
+                    const [taskHours, taskMinutes] = task.scheduledTime.split(':').map(Number);
 
-                    // Check if task time matches current time
-                    if (task.scheduledTime === currentTime) {
+                    // Check if task time matches current time OR was in the last 2 minutes
+                    // This handles browser throttling where setInterval might be delayed
+                    const isTimeMatch = (
+                        (taskHours === currentHours && taskMinutes === currentMinutes) ||
+                        (taskHours === currentHours && taskMinutes === currentMinutes - 1) || // 1 min ago
+                        (currentMinutes === 0 && taskHours === currentHours - 1 && taskMinutes === 59) // Hour rollover handling
+                    );
+
+                    if (isTimeMatch) {
                         console.log('[Notifications] 🔔 Sending notification for:', task.name);
                         try {
                             new Notification(`⏰ Task Due: ${task.name}`, {
@@ -156,7 +160,7 @@ export const useTaskNotifications = (
             });
         };
 
-        // Check immediately and then every 10 seconds (for testing)
+        // Check immediately and then every 10 seconds
         checkTasks();
         const interval = setInterval(checkTasks, 10000);
 
