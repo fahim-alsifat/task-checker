@@ -1,11 +1,12 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Sidebar, { MenuIcon } from '@/components/Sidebar';
 import ProgressSummary from '@/components/ProgressSummary';
 import TaskList from '@/components/TaskList';
 import TaskModal from '@/components/TaskModal';
 import { useChecklist } from '@/context/ChecklistContext';
+import { useTaskNotifications } from '@/hooks/useNotifications';
 import { Task } from '@/types';
 
 // Icons
@@ -22,10 +23,13 @@ const CheckIcon = () => (
 );
 
 export default function Home() {
-    const { activeChecklist, isLoading } = useChecklist();
+    const { activeChecklist, checklists, isLoading } = useChecklist();
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const [modalOpen, setModalOpen] = useState(false);
     const [editingTask, setEditingTask] = useState<Task | null>(null);
+
+    // Initialize task notifications monitoring
+    const { permission, isSupported, requestPermission } = useTaskNotifications(checklists);
 
     const handleAddTask = () => {
         setEditingTask(null);
@@ -93,6 +97,11 @@ export default function Home() {
                                     {activeChecklist.autoReset && (
                                         <span className="text-xs px-2 py-0.5 bg-emerald-500/10 text-emerald-400 rounded-lg border border-emerald-500/20">
                                             Auto-reset
+                                        </span>
+                                    )}
+                                    {activeChecklist.notifications && (
+                                        <span className="text-xs px-2 py-0.5 bg-amber-500/10 text-amber-400 rounded-lg border border-amber-500/20 flex items-center gap-1">
+                                            🔔 Notifications
                                         </span>
                                     )}
                                 </div>

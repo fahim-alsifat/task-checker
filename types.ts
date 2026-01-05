@@ -22,6 +22,7 @@ export interface Checklist {
     color: string;
     autoReset: boolean; // Auto-reset completed tasks at midnight (12 AM)
     lastResetDate?: string; // Track last reset date (YYYY-MM-DD)
+    notifications?: boolean; // Enable browser notifications for this checklist
 }
 
 // Time period for grouping tasks

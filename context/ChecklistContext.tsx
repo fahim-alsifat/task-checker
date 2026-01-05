@@ -20,6 +20,7 @@ interface ChecklistContextType {
     setActiveChecklist: (id: string | null) => void;
     clearCompletedTasks: () => void;
     toggleAutoReset: (id: string) => void;
+    toggleNotifications: (id: string) => void;
 
     // Task operations
     addTask: (task: Omit<Task, 'id' | 'createdAt'>) => void;
@@ -83,6 +84,7 @@ export const ChecklistProvider: React.FC<ChecklistProviderProps> = ({ children }
                 const migratedChecklists = (data.checklists || []).map((c: Checklist) => ({
                     ...c,
                     autoReset: c.autoReset ?? false,
+                    notifications: c.notifications ?? false,
                 }));
                 // Perform auto-reset check
                 const resetChecklists = performAutoReset(migratedChecklists);
@@ -194,6 +196,13 @@ export const ChecklistProvider: React.FC<ChecklistProviderProps> = ({ children }
         ));
     }, []);
 
+    // Toggle notifications for a checklist
+    const toggleNotifications = useCallback((id: string) => {
+        setChecklists(prev => prev.map(c =>
+            c.id === id ? { ...c, notifications: !c.notifications } : c
+        ));
+    }, []);
+
     // Task operations
     const addTask = useCallback((task: Omit<Task, 'id' | 'createdAt'>) => {
         if (!activeChecklistId) return;
@@ -278,6 +287,7 @@ export const ChecklistProvider: React.FC<ChecklistProviderProps> = ({ children }
                 setActiveChecklist,
                 clearCompletedTasks,
                 toggleAutoReset,
+                toggleNotifications,
                 addTask,
                 updateTask,
                 deleteTask,
