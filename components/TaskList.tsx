@@ -2,10 +2,24 @@
 
 import React, { useState, useMemo } from 'react';
 import { useChecklist } from '@/context/ChecklistContext';
-import { Task, TaskCategory, getTimePeriod, TimePeriod, TIME_PERIOD_CONFIG, sortTasksByTime } from '@/types';
+import { Task, TaskCategory, getTimePeriod, TimePeriod, TIME_PERIOD_CONFIG, sortTasksByTime, formatTime, CATEGORY_CONFIG } from '@/types';
 import TaskItem from './TaskItem';
 
 const PERIOD_ORDER: TimePeriod[] = ['morning', 'afternoon', 'evening', 'night'];
+
+// Copy icon
+const CopyIcon = () => (
+    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+    </svg>
+);
+
+// Check icon for copied state
+const CheckIcon = () => (
+    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+    </svg>
+);
 
 interface TaskListProps {
     onEditTask: (task: Task) => void;
@@ -15,6 +29,34 @@ const TaskList: React.FC<TaskListProps> = ({ onEditTask }) => {
     const { activeChecklist } = useChecklist();
     const [categoryFilter, setCategoryFilter] = useState<TaskCategory | 'all'>('all');
     const [showCompleted, setShowCompleted] = useState(true);
+    const [copied, setCopied] = useState(false);
+
+    // Copy all tasks status to clipboard
+    const copyAllStatus = async () => {
+        if (!activeChecklist || activeChecklist.tasks.length === 0) return;
+
+        const sortedTasks = sortTasksByTime(activeChecklist.tasks);
+
+        // Format: ✓ Task Name (Category) - 9:00 AM or ○ Task Name (Category) - 9:00 AM
+        const statusText = sortedTasks.map(task => {
+            const statusIcon = task.status === 'completed' ? '✓' : '○';
+            const categoryLabel = CATEGORY_CONFIG[task.category].label;
+            const timeStr = formatTime(task.scheduledTime);
+            return `${statusIcon} ${task.name} (${categoryLabel}) - ${timeStr}`;
+        }).join('\n');
+
+        const header = `📋 ${activeChecklist.name}\n${'─'.repeat(30)}\n`;
+        const completedCount = sortedTasks.filter(t => t.status === 'completed').length;
+        const footer = `\n${'─'.repeat(30)}\n✅ ${completedCount}/${sortedTasks.length} completed`;
+
+        try {
+            await navigator.clipboard.writeText(header + statusText + footer);
+            setCopied(true);
+            setTimeout(() => setCopied(false), 2000);
+        } catch (err) {
+            console.error('Failed to copy:', err);
+        }
+    };
 
     // Get current time for highlighting
     const currentTime = useMemo(() => {
@@ -132,6 +174,24 @@ const TaskList: React.FC<TaskListProps> = ({ onEditTask }) => {
             `}
                     >
                         {showCompleted ? `Hide completed (${completedCount})` : `Show completed (${completedCount})`}
+                    </button>
+                )}
+
+                {/* Copy All Status button */}
+                {activeChecklist.tasks.length > 0 && (
+                    <button
+                        onClick={copyAllStatus}
+                        className={`
+                            flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all
+                            ${copied
+                                ? 'bg-emerald-500/20 text-emerald-400'
+                                : 'bg-white/5 text-white/50 hover:bg-white/10 hover:text-white/70'
+                            }
+                        `}
+                        title="Copy all tasks status to clipboard"
+                    >
+                        {copied ? <CheckIcon /> : <CopyIcon />}
+                        {copied ? 'Copied!' : 'Copy All'}
                     </button>
                 )}
             </div>
