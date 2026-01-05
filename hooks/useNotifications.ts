@@ -129,13 +129,16 @@ export const useTaskNotifications = (
 
                 checklist.tasks.forEach(task => {
                     if (task.status === 'completed') return;
-                    if (notifiedTasks.current.has(task.id)) return;
+
+                    // Create a unique key for this specific scheduled instance
+                    // This ensures if user changes time, they get notified again
+                    const notificationKey = `${task.id}-${task.scheduledTime}`;
+                    if (notifiedTasks.current.has(notificationKey)) return;
 
                     // Parse task time
                     const [taskHours, taskMinutes] = task.scheduledTime.split(':').map(Number);
 
                     // Check if task time matches current time OR was in the last 2 minutes
-                    // This handles browser throttling where setInterval might be delayed
                     const isTimeMatch = (
                         (taskHours === currentHours && taskMinutes === currentMinutes) ||
                         (taskHours === currentHours && taskMinutes === currentMinutes - 1) || // 1 min ago
@@ -148,9 +151,9 @@ export const useTaskNotifications = (
                             new Notification(`⏰ Task Due: ${task.name}`, {
                                 body: `Time: ${task.scheduledTime} • ${checklist.name}`,
                                 icon: '/favicon.ico',
-                                tag: task.id,
+                                tag: task.id, // Keep tag as ID so new notification replaces old one for same task
                             });
-                            notifiedTasks.current.add(task.id);
+                            notifiedTasks.current.add(notificationKey);
                             saveNotifiedTasks();
                         } catch (err) {
                             console.error('[Notifications] Failed:', err);
