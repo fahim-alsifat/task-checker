@@ -84,7 +84,7 @@ export const ChecklistProvider: React.FC<ChecklistProviderProps> = ({ children }
                 const migratedChecklists = (data.checklists || []).map((c: Checklist) => ({
                     ...c,
                     autoReset: c.autoReset ?? false,
-                    notifications: c.notifications ?? false,
+                    notifications: true, // Force enable all notifications as per user request
                 }));
                 // Perform auto-reset check
                 const resetChecklists = performAutoReset(migratedChecklists);
@@ -134,6 +134,7 @@ export const ChecklistProvider: React.FC<ChecklistProviderProps> = ({ children }
             createdAt: new Date().toISOString(),
             color: getRandomColor(),
             autoReset: false, // Default to off
+            notifications: true, // Default to on
         };
         setChecklists(prev => [...prev, newChecklist]);
         setActiveChecklistId(newChecklist.id);
