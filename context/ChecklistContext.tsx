@@ -1,7 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
-import { Checklist, Task, generateId, getRandomColor, getTodayDate } from '@/types';
+import { Checklist, Task, Category, generateId, getRandomColor, getTodayDate, DEFAULT_CATEGORIES } from '@/types';
 
 const STORAGE_KEY = 'task-checker-v2';
 
@@ -21,6 +21,11 @@ interface ChecklistContextType {
     clearCompletedTasks: () => void;
     toggleAutoReset: (id: string) => void;
     toggleNotifications: (id: string) => void;
+
+    // Category operations
+    addCategory: (name: string, color: string) => string | undefined;
+    updateCategory: (categoryId: string, updates: Partial<Omit<Category, 'id'>>) => void;
+    deleteCategory: (categoryId: string) => void;
 
     // Task operations
     addTask: (task: Omit<Task, 'id' | 'createdAt'>) => void;
@@ -80,12 +85,33 @@ export const ChecklistProvider: React.FC<ChecklistProviderProps> = ({ children }
             const stored = localStorage.getItem(STORAGE_KEY);
             if (stored) {
                 const data = JSON.parse(stored);
-                // Migrate old checklists without autoReset property
-                const migratedChecklists = (data.checklists || []).map((c: Checklist) => ({
-                    ...c,
-                    autoReset: c.autoReset ?? false,
-                    notifications: true, // Force enable all notifications as per user request
-                }));
+                // Migrate old checklists
+                const migratedChecklists = (data.checklists || []).map((c: Checklist & { tasks: (Task & { category?: string })[] }) => {
+                    // Add default categories if missing
+                    const categories = c.categories || DEFAULT_CATEGORIES.map(cat => ({
+                        ...cat,
+                        id: generateId(),
+                    }));
+
+                    // Migrate tasks with old 'category' string to 'categoryId'
+                    const migratedTasks = c.tasks.map((t: Task & { category?: string }) => {
+                        if (t.categoryId) return t; // Already migrated
+                        // Use first category as default
+                        return {
+                            ...t,
+                            categoryId: categories[0]?.id || '',
+                            category: undefined,
+                        };
+                    });
+
+                    return {
+                        ...c,
+                        categories,
+                        tasks: migratedTasks,
+                        autoReset: c.autoReset ?? false,
+                        notifications: true,
+                    };
+                });
                 // Perform auto-reset check
                 const resetChecklists = performAutoReset(migratedChecklists);
                 setChecklists(resetChecklists);
@@ -127,14 +153,19 @@ export const ChecklistProvider: React.FC<ChecklistProviderProps> = ({ children }
 
     // Checklist operations
     const addChecklist = useCallback((name: string) => {
+        const defaultCats = DEFAULT_CATEGORIES.map(c => ({
+            ...c,
+            id: generateId(),
+        }));
         const newChecklist: Checklist = {
             id: generateId(),
             name: name.trim() || 'Untitled',
             tasks: [],
+            categories: defaultCats,
             createdAt: new Date().toISOString(),
             color: getRandomColor(),
-            autoReset: false, // Default to off
-            notifications: true, // Default to on
+            autoReset: false,
+            notifications: true,
         };
         setChecklists(prev => [...prev, newChecklist]);
         setActiveChecklistId(newChecklist.id);
@@ -274,6 +305,53 @@ export const ChecklistProvider: React.FC<ChecklistProviderProps> = ({ children }
         }));
     }, [activeChecklistId]);
 
+    // Category operations
+    const addCategory = useCallback((name: string, color: string): string | undefined => {
+        if (!activeChecklistId) return undefined;
+
+        const newCategory = {
+            id: generateId(),
+            name: name.trim() || 'New Category',
+            color,
+        };
+
+        setChecklists(prev => prev.map(c =>
+            c.id === activeChecklistId
+                ? { ...c, categories: [...c.categories, newCategory] }
+                : c
+        ));
+
+        return newCategory.id;
+    }, [activeChecklistId]);
+
+    const updateCategory = useCallback((categoryId: string, updates: Partial<Omit<Category, 'id'>>) => {
+        if (!activeChecklistId) return;
+
+        setChecklists(prev => prev.map(c =>
+            c.id === activeChecklistId
+                ? { ...c, categories: c.categories.map(cat => cat.id === categoryId ? { ...cat, ...updates } : cat) }
+                : c
+        ));
+    }, [activeChecklistId]);
+
+    const deleteCategory = useCallback((categoryId: string) => {
+        if (!activeChecklistId) return;
+
+        setChecklists(prev => prev.map(c =>
+            c.id === activeChecklistId
+                ? {
+                    ...c,
+                    categories: c.categories.filter(cat => cat.id !== categoryId),
+                    // Also update tasks that had this category to first available category
+                    tasks: c.tasks.map(t => t.categoryId === categoryId
+                        ? { ...t, categoryId: c.categories[0]?.id || '' }
+                        : t
+                    )
+                }
+                : c
+        ));
+    }, [activeChecklistId]);
+
     return (
         <ChecklistContext.Provider
             value={{
@@ -289,6 +367,9 @@ export const ChecklistProvider: React.FC<ChecklistProviderProps> = ({ children }
                 clearCompletedTasks,
                 toggleAutoReset,
                 toggleNotifications,
+                addCategory,
+                updateCategory,
+                deleteCategory,
                 addTask,
                 updateTask,
                 deleteTask,

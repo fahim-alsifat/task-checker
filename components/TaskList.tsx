@@ -2,7 +2,7 @@
 
 import React, { useState, useMemo } from 'react';
 import { useChecklist } from '@/context/ChecklistContext';
-import { Task, TaskCategory, getTimePeriod, TimePeriod, TIME_PERIOD_CONFIG, sortTasksByTime, formatTime, CATEGORY_CONFIG } from '@/types';
+import { Task, getTimePeriod, TimePeriod, TIME_PERIOD_CONFIG, sortTasksByTime, formatTime } from '@/types';
 import TaskItem from './TaskItem';
 
 const PERIOD_ORDER: TimePeriod[] = ['morning', 'afternoon', 'evening', 'night'];
@@ -27,9 +27,16 @@ interface TaskListProps {
 
 const TaskList: React.FC<TaskListProps> = ({ onEditTask }) => {
     const { activeChecklist } = useChecklist();
-    const [categoryFilter, setCategoryFilter] = useState<TaskCategory | 'all'>('all');
+    const [categoryFilter, setCategoryFilter] = useState<string>('all');
     const [showCompleted, setShowCompleted] = useState(true);
     const [copied, setCopied] = useState(false);
+
+    // Get category name by id
+    const getCategoryName = (categoryId: string): string => {
+        if (!activeChecklist) return 'Unknown';
+        const cat = activeChecklist.categories.find(c => c.id === categoryId);
+        return cat?.name || 'Unknown';
+    };
 
     // Copy all tasks status to clipboard
     const copyAllStatus = async () => {
@@ -40,9 +47,9 @@ const TaskList: React.FC<TaskListProps> = ({ onEditTask }) => {
         // Format: ✓ Task Name (Category) - 9:00 AM or ○ Task Name (Category) - 9:00 AM
         const statusText = sortedTasks.map(task => {
             const statusIcon = task.status === 'completed' ? '✓' : '○';
-            const categoryLabel = CATEGORY_CONFIG[task.category].label;
+            const categoryName = getCategoryName(task.categoryId);
             const timeStr = formatTime(task.scheduledTime);
-            return `${statusIcon} ${task.name} (${categoryLabel}) - ${timeStr}`;
+            return `${statusIcon} ${task.name} (${categoryName}) - ${timeStr}`;
         }).join('\n');
 
         const header = `📋 ${activeChecklist.name}\n${'─'.repeat(30)}\n`;
@@ -79,7 +86,7 @@ const TaskList: React.FC<TaskListProps> = ({ onEditTask }) => {
 
         // Apply filters
         if (categoryFilter !== 'all') {
-            tasks = tasks.filter(t => t.category === categoryFilter);
+            tasks = tasks.filter(t => t.categoryId === categoryFilter);
         }
         if (!showCompleted) {
             tasks = tasks.filter(t => t.status !== 'completed');
@@ -123,15 +130,7 @@ const TaskList: React.FC<TaskListProps> = ({ onEditTask }) => {
         );
     }
 
-    const categories: { value: TaskCategory | 'all'; label: string }[] = [
-        { value: 'all', label: 'All' },
-        { value: 'news', label: 'News' },
-        { value: 'solution', label: 'Solution' },
-        { value: 'image', label: 'Image' },
-        { value: 'prompt', label: 'Prompt' },
-        { value: 'other', label: 'Other' },
-    ];
-
+    const categories = activeChecklist.categories || [];
     const completedCount = activeChecklist.tasks.filter(t => t.status === 'completed').length;
     const hasFilters = categoryFilter !== 'all' || !showCompleted;
 
@@ -141,19 +140,35 @@ const TaskList: React.FC<TaskListProps> = ({ onEditTask }) => {
             <div className="flex flex-wrap items-center gap-2 mb-5">
                 {/* Category filters */}
                 <div className="flex gap-1 flex-wrap">
+                    <button
+                        onClick={() => setCategoryFilter('all')}
+                        className={`
+                            px-3 py-1.5 rounded-lg text-xs font-medium transition-all
+                            ${categoryFilter === 'all'
+                                ? 'bg-blue-600 text-white'
+                                : 'bg-white/5 text-white/50 hover:bg-white/10 hover:text-white/70'
+                            }
+                        `}
+                    >
+                        All
+                    </button>
                     {categories.map(cat => (
                         <button
-                            key={cat.value}
-                            onClick={() => setCategoryFilter(cat.value)}
+                            key={cat.id}
+                            onClick={() => setCategoryFilter(cat.id)}
                             className={`
-                px-3 py-1.5 rounded-lg text-xs font-medium transition-all
-                ${categoryFilter === cat.value
+                                px-3 py-1.5 rounded-lg text-xs font-medium transition-all flex items-center gap-1.5
+                                ${categoryFilter === cat.id
                                     ? 'bg-blue-600 text-white'
                                     : 'bg-white/5 text-white/50 hover:bg-white/10 hover:text-white/70'
                                 }
-              `}
+                            `}
                         >
-                            {cat.label}
+                            <span
+                                className="w-2 h-2 rounded-full"
+                                style={{ backgroundColor: cat.color }}
+                            />
+                            {cat.name}
                         </button>
                     ))}
                 </div>
@@ -166,12 +181,12 @@ const TaskList: React.FC<TaskListProps> = ({ onEditTask }) => {
                     <button
                         onClick={() => setShowCompleted(!showCompleted)}
                         className={`
-              px-3 py-1.5 rounded-lg text-xs font-medium transition-all
-              ${showCompleted
+                            px-3 py-1.5 rounded-lg text-xs font-medium transition-all
+                            ${showCompleted
                                 ? 'bg-white/5 text-white/50 hover:bg-white/10'
                                 : 'bg-emerald-500/20 text-emerald-400'
                             }
-            `}
+                        `}
                     >
                         {showCompleted ? `Hide completed (${completedCount})` : `Show completed (${completedCount})`}
                     </button>

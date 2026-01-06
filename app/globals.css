@@ -285,7 +285,7 @@ body {
 
 /* Sidebar */
 .sidebar {
-  @apply w-72 bg-zinc-950 border-r border-zinc-800/50 flex flex-col h-full;
+  @apply w-80 bg-zinc-950 border-r border-zinc-800/50 flex flex-col h-screen sticky top-0;
 }
 
 .sidebar-item {
@@ -346,7 +346,11 @@ body {
 
 /* Glass effect */
 .glass {
-  @apply bg-zinc-900/50 backdrop-blur-xl border border-zinc-800/50;
+  background: linear-gradient(180deg, rgba(15, 15, 18, 0.95) 0%, rgba(10, 10, 12, 0.9) 100%);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.3);
 }
 
 /* Selection */
@@ -366,4 +370,148 @@ body {
 
 .toggle-thumb {
   @apply absolute top-1 w-5 h-5 bg-white rounded-full shadow-lg transition-transform duration-200;
+}
+
+/* ============================================
+   MOBILE RESPONSIVE STYLES
+   ============================================ */
+
+/* Mobile-first adjustments */
+@media (max-width: 640px) {
+
+  /* Larger touch targets */
+  .btn {
+    @apply px-4 py-3 text-base;
+  }
+
+  /* Full width modal on mobile */
+  .modal-backdrop {
+    @apply p-0 items-end;
+  }
+
+  .modal-content {
+    @apply max-w-full rounded-b-none rounded-t-3xl max-h-[90vh] overflow-y-auto;
+  }
+
+  /* Better input sizing for mobile */
+  .input {
+    @apply py-3.5 text-base;
+  }
+
+  /* Compact task items */
+  .task-item {
+    @apply p-3;
+  }
+
+  /* Checkbox spacing */
+  .checkbox {
+    @apply w-6 h-6;
+  }
+
+  /* Sidebar mobile full screen */
+  .sidebar {
+    @apply w-[85vw] max-w-[320px];
+  }
+
+  /* Stack badges on mobile */
+  .badge {
+    @apply px-2 py-0.5 text-[10px];
+  }
+
+  /* Empty state compact */
+  .empty-state {
+    @apply py-12;
+  }
+
+  .empty-state-icon {
+    @apply text-5xl;
+  }
+
+  /* Time period compact */
+  .time-period {
+    @apply py-2 mb-2;
+  }
+
+  /* Feature cards smaller on mobile */
+  .feature-card {
+    @apply p-4;
+  }
+
+  /* Progress bar */
+  .progress-bar {
+    @apply h-3;
+  }
+}
+
+/* Extra small screens (phones in portrait) */
+@media (max-width: 380px) {
+  .modal-content {
+    @apply max-h-[95vh];
+  }
+
+  .task-item {
+    @apply p-2.5;
+  }
+
+  .sidebar {
+    @apply w-full max-w-full;
+  }
+
+  .empty-state {
+    @apply py-8;
+  }
+
+  .empty-state-icon {
+    @apply text-4xl;
+  }
+
+  .empty-state-title {
+    @apply text-base;
+  }
+}
+
+/* Touch-friendly hover states */
+@media (hover: none) {
+  .task-item {
+    @apply active:bg-zinc-800/50;
+  }
+
+  .sidebar-item:hover {
+    @apply bg-transparent;
+  }
+
+  .sidebar-item:active {
+    @apply bg-zinc-800/50;
+  }
+
+  .btn:active {
+    @apply scale-[0.98];
+  }
+}
+
+/* Safe area for notched phones */
+@supports (padding: max(0px)) {
+  .modal-content {
+    padding-bottom: max(16px, env(safe-area-inset-bottom));
+  }
+
+  header {
+    padding-top: max(12px, env(safe-area-inset-top));
+  }
+}
+
+/* Prevent text zoom on iOS */
+input,
+select,
+textarea {
+  font-size: 16px !important;
+}
+
+@media (min-width: 641px) {
+
+  input,
+  select,
+  textarea {
+    font-size: inherit !important;
+  }
 }

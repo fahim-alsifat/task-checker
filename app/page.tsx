@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import Sidebar, { MenuIcon } from '@/components/Sidebar';
 import ProgressSummary from '@/components/ProgressSummary';
 import TaskList from '@/components/TaskList';
@@ -11,14 +11,14 @@ import { Task } from '@/types';
 
 // Icons
 const PlusIcon = () => (
-    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
     </svg>
 );
 
-const CheckIcon = () => (
-    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+const BellIcon = () => (
+    <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24">
+        <path d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
     </svg>
 );
 
@@ -32,7 +32,7 @@ export default function Home() {
     const { permission, isSupported, requestPermission } = useTaskNotifications(checklists);
     const [notificationsEnabled, setNotificationsEnabled] = useState(false);
 
-    // Enable notification function - requests permission and sends test
+    // Enable notification function
     const enableNotifications = async () => {
         if (!isSupported) {
             alert('Browser does not support notifications!');
@@ -45,19 +45,17 @@ export default function Home() {
                 return;
             }
         }
-        // Also enable notifications for the active checklist
         if (activeChecklist && !activeChecklist.notifications) {
             toggleNotifications(activeChecklist.id);
         }
         setNotificationsEnabled(true);
-        // Send test notification
         new Notification('✅ Notifications Enabled!', {
             body: 'You will now receive notifications for your scheduled tasks.',
             icon: '/favicon.ico'
         });
     };
 
-    // Immediate test - send notification for first pending task
+    // Test notification
     const sendTestNow = () => {
         if (!activeChecklist) return;
         const pendingTasks = activeChecklist.tasks.filter(t => t.status !== 'completed');
@@ -66,16 +64,10 @@ export default function Home() {
             return;
         }
         const task = pendingTasks[0];
-        console.log('[Test] Sending notification for:', task.name);
-        try {
-            new Notification(`🔔 TEST: ${task.name}`, {
-                body: `Scheduled: ${task.scheduledTime}`,
-                icon: '/favicon.ico'
-            });
-        } catch (err) {
-            console.error('[Test] Failed:', err);
-            alert('Notification failed: ' + err);
-        }
+        new Notification(`🔔 TEST: ${task.name}`, {
+            body: `Scheduled: ${task.scheduledTime}`,
+            icon: '/favicon.ico'
+        });
     };
 
     const handleAddTask = () => {
@@ -113,74 +105,67 @@ export default function Home() {
             {/* Main content */}
             <main className="flex-1 flex flex-col min-h-screen">
                 {/* Header */}
-                <header className="sticky top-0 z-30 glass border-b border-zinc-800/50">
-                    <div className="flex items-center justify-between px-4 py-4 max-w-4xl mx-auto w-full">
+                <header className="sticky top-0 z-30 bg-zinc-950/90 backdrop-blur-sm border-b border-zinc-800/50">
+                    <div className="flex items-center justify-between px-3 sm:px-5 py-2.5 sm:py-3">
                         {/* Left side */}
-                        <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
                             <button
                                 onClick={() => setSidebarOpen(true)}
-                                className="lg:hidden p-2.5 hover:bg-zinc-800 rounded-xl transition-colors"
+                                className="lg:hidden p-2 hover:bg-zinc-800 rounded-lg transition-colors flex-shrink-0"
                                 aria-label="Open menu"
                             >
                                 <MenuIcon />
                             </button>
 
-                            {/* Title - visible on mobile */}
-                            <div className="lg:hidden flex items-center gap-2.5">
-                                <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-blue-600 to-blue-500 flex items-center justify-center shadow-lg shadow-blue-500/30">
-                                    <CheckIcon />
-                                </div>
-                                <span className="font-bold text-lg">TaskChecker</span>
-                            </div>
-
-                            {/* Breadcrumb - visible on desktop when checklist selected */}
+                            {/* Breadcrumb */}
                             {activeChecklist && (
-                                <div className="hidden lg:flex items-center gap-2.5 text-zinc-400">
+                                <div className="flex items-center gap-2 min-w-0 flex-1">
                                     <span
-                                        className="w-2.5 h-2.5 rounded-full shadow-lg"
-                                        style={{ backgroundColor: activeChecklist.color, boxShadow: `0 0 10px ${activeChecklist.color}40` }}
+                                        className="w-2 h-2 rounded-full flex-shrink-0"
+                                        style={{ backgroundColor: activeChecklist.color }}
                                     />
-                                    <span className="text-sm font-medium">{activeChecklist.name}</span>
-                                    {activeChecklist.autoReset && (
-                                        <span className="text-xs px-2 py-0.5 bg-emerald-500/10 text-emerald-400 rounded-lg border border-emerald-500/20">
-                                            Auto-reset
-                                        </span>
-                                    )}
-                                    {activeChecklist.notifications && (
-                                        <span className="text-xs px-2 py-0.5 bg-amber-500/10 text-amber-400 rounded-lg border border-amber-500/20 flex items-center gap-1">
-                                            🔔 Notifications
-                                        </span>
-                                    )}
+                                    <span className="text-sm font-medium text-white/90 truncate">{activeChecklist.name}</span>
+                                    {/* Hide badges on very small screens */}
+                                    <div className="hidden sm:flex items-center gap-1.5">
+                                        {activeChecklist.autoReset && (
+                                            <span className="text-[10px] px-2 py-0.5 bg-zinc-800 text-zinc-400 rounded whitespace-nowrap">
+                                                Auto-reset
+                                            </span>
+                                        )}
+                                        {activeChecklist.notifications && (
+                                            <span className="text-[10px] px-2 py-0.5 bg-amber-500/15 text-amber-400 rounded flex items-center gap-1 whitespace-nowrap">
+                                                <BellIcon />
+                                                <span className="hidden md:inline">Notifications</span>
+                                            </span>
+                                        )}
+                                    </div>
                                 </div>
                             )}
                         </div>
 
-                        {/* Right side - Add task button */}
+                        {/* Right side */}
                         {activeChecklist && (
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
                                 {!notificationsEnabled && permission !== 'granted' ? (
                                     <button
                                         onClick={enableNotifications}
-                                        className="btn btn-secondary text-xs px-3"
-                                        title="Enable notifications"
+                                        className="text-xs px-2.5 sm:px-3 py-1.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded-lg transition-colors flex items-center gap-1.5"
                                     >
-                                        🔔 Enable Notifications
+                                        <BellIcon />
+                                        <span className="hidden sm:inline">Enable</span>
                                     </button>
                                 ) : (
-                                    <>
-                                        <span className="text-xs text-emerald-400 px-2 py-1 bg-emerald-500/10 rounded-lg border border-emerald-500/20">
-                                            ✅ On
-                                        </span>
-                                        <button
-                                            onClick={sendTestNow}
-                                            className="btn btn-secondary text-xs px-2"
-                                            title="Send test notification now"
-                                        >
-                                            🧪 Test
-                                        </button>
-                                    </>
+                                    <button
+                                        onClick={sendTestNow}
+                                        className="text-xs px-2.5 sm:px-3 py-1.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded-lg transition-colors"
+                                    >
+                                        Test
+                                    </button>
                                 )}
-                                <button onClick={handleAddTask} className="btn btn-primary">
+                                <button
+                                    onClick={handleAddTask}
+                                    className="text-sm px-3 sm:px-4 py-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded-lg transition-colors flex items-center gap-1.5 font-medium"
+                                >
                                     <PlusIcon />
                                     <span className="hidden sm:inline">Add Task</span>
                                 </button>
@@ -200,7 +185,6 @@ export default function Home() {
                         ) : (
                             /* Welcome screen */
                             <div className="flex flex-col items-center justify-center min-h-[70vh] text-center px-4">
-                                {/* Logo */}
                                 <div className="relative mb-8">
                                     <div className="w-24 h-24 rounded-3xl bg-gradient-to-br from-blue-600 via-blue-500 to-cyan-400 flex items-center justify-center shadow-2xl shadow-blue-500/40 animate-glow">
                                         <svg className="w-12 h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -225,7 +209,6 @@ export default function Home() {
                                     Create Your First Checklist
                                 </button>
 
-                                {/* Features */}
                                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-16 w-full max-w-2xl">
                                     {[
                                         { icon: '📋', title: 'Multiple Lists', desc: 'Organize different projects separately' },

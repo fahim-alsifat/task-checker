@@ -122,7 +122,6 @@ export const useTaskNotifications = (
             const now = new Date();
             const currentHours = now.getHours();
             const currentMinutes = now.getMinutes();
-            const currentTimeStr = `${String(currentHours).padStart(2, '0')}:${String(currentMinutes).padStart(2, '0')}`;
 
             checklists.forEach(checklist => {
                 if (!checklist.notifications) return;
@@ -130,33 +129,54 @@ export const useTaskNotifications = (
                 checklist.tasks.forEach(task => {
                     if (task.status === 'completed') return;
 
-                    // Create a unique key for this specific scheduled instance
-                    // This ensures if user changes time, they get notified again
-                    const notificationKey = `${task.id}-${task.scheduledTime}`;
-                    if (notifiedTasks.current.has(notificationKey)) return;
-
                     // Parse task time
                     const [taskHours, taskMinutes] = task.scheduledTime.split(':').map(Number);
 
-                    // Check if task time matches current time OR was in the last 2 minutes
-                    const isTimeMatch = (
-                        (taskHours === currentHours && taskMinutes === currentMinutes) ||
-                        (taskHours === currentHours && taskMinutes === currentMinutes - 1) || // 1 min ago
-                        (currentMinutes === 0 && taskHours === currentHours - 1 && taskMinutes === 59) // Hour rollover handling
-                    );
+                    // Calculate minutes until task
+                    let minutesUntil = (taskHours * 60 + taskMinutes) - (currentHours * 60 + currentMinutes);
 
-                    if (isTimeMatch) {
-                        console.log('[Notifications] 🔔 Sending notification for:', task.name);
-                        try {
-                            new Notification(`⏰ Task Due: ${task.name}`, {
-                                body: `Time: ${task.scheduledTime} • ${checklist.name}`,
-                                icon: '/favicon.ico',
-                                tag: task.id, // Keep tag as ID so new notification replaces old one for same task
-                            });
-                            notifiedTasks.current.add(notificationKey);
-                            saveNotifiedTasks();
-                        } catch (err) {
-                            console.error('[Notifications] Failed:', err);
+                    // Get notification times based on priority
+                    const priority = task.priority || 'normal';
+                    let notifyMinutesBefore: number[] = [0]; // default: on time only
+
+                    if (priority === 'high') {
+                        notifyMinutesBefore = [5, 2, 0]; // 5min, 2min, on time
+                    } else if (priority === 'medium') {
+                        notifyMinutesBefore = [2, 0]; // 2min, on time
+                    }
+
+                    // Check each notification time
+                    for (const minutesBefore of notifyMinutesBefore) {
+                        // Unique key for this specific notification timing
+                        const notificationKey = `${task.id}-${task.scheduledTime}-${minutesBefore}`;
+
+                        if (notifiedTasks.current.has(notificationKey)) continue;
+
+                        // Check if current time matches notification time (with 1 min window for reliability)
+                        const shouldNotify = (
+                            minutesUntil === minutesBefore ||
+                            minutesUntil === minutesBefore - 1
+                        );
+
+                        if (shouldNotify && minutesUntil >= -1) {
+                            const prefix = minutesBefore === 0
+                                ? '⏰ Now:'
+                                : minutesBefore === 2
+                                    ? '⚡ 2 min:'
+                                    : '🔥 5 min:';
+
+                            console.log(`[Notifications] 🔔 Sending ${minutesBefore}min notification for:`, task.name);
+                            try {
+                                new Notification(`${prefix} ${task.name}`, {
+                                    body: `${task.scheduledTime} • ${checklist.name}${priority !== 'normal' ? ` • ${priority.toUpperCase()} priority` : ''}`,
+                                    icon: '/favicon.ico',
+                                    tag: `${task.id}-${minutesBefore}`,
+                                });
+                                notifiedTasks.current.add(notificationKey);
+                                saveNotifiedTasks();
+                            } catch (err) {
+                                console.error('[Notifications] Failed:', err);
+                            }
                         }
                     }
                 });

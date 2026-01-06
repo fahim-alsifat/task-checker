@@ -1,41 +1,62 @@
 // Task and Checklist type definitions
 
-export type TaskCategory = 'news' | 'solution' | 'image' | 'prompt' | 'other';
 export type TaskStatus = 'pending' | 'completed';
+export type TaskPriority = 'high' | 'medium' | 'normal';
+
+// Dynamic category created per checklist
+export interface Category {
+    id: string;
+    name: string;
+    color: string; // hex color
+}
 
 export interface Task {
     id: string;
     name: string;
     scheduledTime: string; // "HH:mm" format (24-hour)
-    category: TaskCategory;
+    categoryId: string; // References Category.id
+    priority: TaskPriority; // high = 3 notifications, medium = 2, normal = 1
     status: TaskStatus;
     notes?: string;
     createdAt: string;
     completedAt?: string;
 }
 
+// Priority notification config
+export const PRIORITY_CONFIG: Record<TaskPriority, { label: string; color: string; notifyMinutesBefore: number[] }> = {
+    high: { label: 'High', color: '#ef4444', notifyMinutesBefore: [5, 2, 0] },
+    medium: { label: 'Medium', color: '#f59e0b', notifyMinutesBefore: [2, 0] },
+    normal: { label: 'Normal', color: '#6b7280', notifyMinutesBefore: [0] },
+};
+
 export interface Checklist {
     id: string;
     name: string;
     tasks: Task[];
+    categories: Category[]; // Custom categories for this checklist
     createdAt: string;
     color: string;
-    autoReset: boolean; // Auto-reset completed tasks at midnight (12 AM)
-    lastResetDate?: string; // Track last reset date (YYYY-MM-DD)
-    notifications?: boolean; // Enable browser notifications for this checklist
+    autoReset: boolean;
+    lastResetDate?: string;
+    notifications?: boolean;
 }
 
-// Time period for grouping tasks
-export type TimePeriod = 'morning' | 'afternoon' | 'evening' | 'night';
+// Default categories for new checklists
+export const DEFAULT_CATEGORIES: Omit<Category, 'id'>[] = [
+    { name: 'General', color: '#6b7280' },
+];
 
-// Category configuration with colors and icons
-export const CATEGORY_CONFIG: Record<TaskCategory, { label: string; color: string; bgColor: string; borderColor: string }> = {
-    news: { label: 'News', color: 'text-blue-400', bgColor: 'bg-blue-500/15', borderColor: 'border-blue-500/30' },
-    solution: { label: 'Solution', color: 'text-emerald-400', bgColor: 'bg-emerald-500/15', borderColor: 'border-emerald-500/30' },
-    image: { label: 'Image', color: 'text-purple-400', bgColor: 'bg-purple-500/15', borderColor: 'border-purple-500/30' },
-    prompt: { label: 'Prompt', color: 'text-amber-400', bgColor: 'bg-amber-500/15', borderColor: 'border-amber-500/30' },
-    other: { label: 'Other', color: 'text-gray-400', bgColor: 'bg-gray-500/15', borderColor: 'border-gray-500/30' },
-};
+// Category color presets
+export const CATEGORY_COLORS = [
+    '#3b82f6', // blue
+    '#10b981', // emerald
+    '#8b5cf6', // purple
+    '#f59e0b', // amber
+    '#ef4444', // red
+    '#ec4899', // pink
+    '#06b6d4', // cyan
+    '#6b7280', // gray
+];
 
 // Checklist colors
 export const CHECKLIST_COLORS = [
@@ -47,6 +68,9 @@ export const CHECKLIST_COLORS = [
     '#ec4899', // pink
     '#06b6d4', // cyan
 ];
+
+// Time period for grouping tasks
+export type TimePeriod = 'morning' | 'afternoon' | 'evening' | 'night';
 
 // Time period configuration
 export const TIME_PERIOD_CONFIG: Record<TimePeriod, { label: string; icon: string; hours: [number, number] }> = {

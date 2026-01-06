@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Task, CATEGORY_CONFIG, formatTime } from '@/types';
+import { Task, formatTime, PRIORITY_CONFIG } from '@/types';
 import { useChecklist } from '@/context/ChecklistContext';
 
 // Icons
@@ -37,9 +37,13 @@ interface TaskItemProps {
 }
 
 const TaskItem: React.FC<TaskItemProps> = ({ task, onEdit, isCurrentTask, isUpcoming }) => {
-    const { toggleTaskStatus, deleteTask } = useChecklist();
+    const { toggleTaskStatus, deleteTask, activeChecklist } = useChecklist();
     const isCompleted = task.status === 'completed';
-    const categoryConfig = CATEGORY_CONFIG[task.category];
+
+    // Get category from checklist
+    const category = activeChecklist?.categories.find(c => c.id === task.categoryId);
+    const categoryName = category?.name || 'General';
+    const categoryColor = category?.color || '#6b7280';
 
     // Build class names
     let containerClasses = 'task-item group';
@@ -54,9 +58,9 @@ const TaskItem: React.FC<TaskItemProps> = ({ task, onEdit, isCurrentTask, isUpco
                 <button
                     onClick={() => toggleTaskStatus(task.id)}
                     className={`
-            checkbox mt-0.5 flex-shrink-0
-            ${isCompleted ? 'checkbox-checked animate-checkPop' : ''}
-          `}
+                        checkbox mt-0.5 flex-shrink-0
+                        ${isCompleted ? 'checkbox-checked animate-checkPop' : ''}
+                    `}
                     aria-label={isCompleted ? 'Mark as pending' : 'Mark as complete'}
                 >
                     {isCompleted && <CheckIcon />}
@@ -71,9 +75,33 @@ const TaskItem: React.FC<TaskItemProps> = ({ task, onEdit, isCurrentTask, isUpco
                         </span>
 
                         {/* Category badge */}
-                        <span className={`badge ${categoryConfig.bgColor} ${categoryConfig.color} ${categoryConfig.borderColor}`}>
-                            {categoryConfig.label}
+                        <span
+                            className="badge flex items-center gap-1.5"
+                            style={{
+                                backgroundColor: `${categoryColor}20`,
+                                borderColor: `${categoryColor}40`,
+                                color: categoryColor
+                            }}
+                        >
+                            <span
+                                className="w-1.5 h-1.5 rounded-full"
+                                style={{ backgroundColor: categoryColor }}
+                            />
+                            {categoryName}
                         </span>
+
+                        {/* Priority indicator */}
+                        {task.priority && task.priority !== 'normal' && (
+                            <span
+                                className="text-[10px] px-1.5 py-0.5 rounded font-medium"
+                                style={{
+                                    backgroundColor: `${PRIORITY_CONFIG[task.priority].color}20`,
+                                    color: PRIORITY_CONFIG[task.priority].color
+                                }}
+                            >
+                                {task.priority === 'high' ? '🔥' : '⚡'} {PRIORITY_CONFIG[task.priority].label}
+                            </span>
+                        )}
 
                         {/* Current indicator */}
                         {isCurrentTask && !isCompleted && (
