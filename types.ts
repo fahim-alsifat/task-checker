@@ -18,6 +18,7 @@ export interface Task {
     priority: TaskPriority; // high = 3 notifications, medium = 2, normal = 1
     status: TaskStatus;
     notes?: string;
+    timeLimit?: number; // Optional time limit in minutes
     createdAt: string;
     completedAt?: string;
 }
