@@ -48,7 +48,7 @@ const TaskList: React.FC<TaskListProps> = ({ onEditTask }) => {
         const statusText = sortedTasks.map(task => {
             const statusIcon = task.status === 'completed' ? '✓' : '○';
             const categoryName = getCategoryName(task.categoryId);
-            const timeStr = formatTime(task.scheduledTime);
+            const timeStr = task.scheduledTime ? formatTime(task.scheduledTime) : 'No time';
             return `${statusIcon} ${task.name} (${categoryName}) - ${timeStr}`;
         }).join('\n');
 
@@ -72,15 +72,16 @@ const TaskList: React.FC<TaskListProps> = ({ onEditTask }) => {
     }, []);
 
     // Filter and group tasks
-    const { groupedTasks, filteredCount } = useMemo(() => {
+    const { groupedTasks, unscheduledTasks, filteredCount } = useMemo(() => {
         const groups: Record<TimePeriod, Task[]> = {
             morning: [],
             afternoon: [],
             evening: [],
             night: [],
         };
+        const noTime: Task[] = [];
 
-        if (!activeChecklist) return { groupedTasks: groups, filteredCount: 0 };
+        if (!activeChecklist) return { groupedTasks: groups, unscheduledTasks: noTime, filteredCount: 0 };
 
         let tasks = [...activeChecklist.tasks];
 
@@ -95,23 +96,27 @@ const TaskList: React.FC<TaskListProps> = ({ onEditTask }) => {
         // Sort and group
         tasks = sortTasksByTime(tasks);
         tasks.forEach(task => {
-            const period = getTimePeriod(task.scheduledTime);
-            groups[period].push(task);
+            if (task.scheduledTime) {
+                const period = getTimePeriod(task.scheduledTime);
+                groups[period].push(task);
+            } else {
+                noTime.push(task);
+            }
         });
 
-        return { groupedTasks: groups, filteredCount: tasks.length };
+        return { groupedTasks: groups, unscheduledTasks: noTime, filteredCount: tasks.length };
     }, [activeChecklist, categoryFilter, showCompleted]);
 
-    // Find current and upcoming tasks
+    // Find current and upcoming tasks (only from scheduled tasks)
     const { currentTaskId, upcomingTaskIds } = useMemo(() => {
         if (!activeChecklist) return { currentTaskId: null, upcomingTaskIds: [] as string[] };
 
         const pendingTasks = sortTasksByTime(
-            activeChecklist.tasks.filter(t => t.status === 'pending')
+            activeChecklist.tasks.filter(t => t.status === 'pending' && t.scheduledTime)
         );
 
         // Find tasks at or after current time
-        const futureOrCurrent = pendingTasks.filter(t => t.scheduledTime >= currentTime);
+        const futureOrCurrent = pendingTasks.filter(t => (t.scheduledTime || '') >= currentTime);
         const tasksToHighlight = futureOrCurrent.length > 0 ? futureOrCurrent : pendingTasks;
 
         return {
@@ -242,6 +247,26 @@ const TaskList: React.FC<TaskListProps> = ({ onEditTask }) => {
                     </div>
                 );
             })}
+
+            {/* Unscheduled tasks */}
+            {unscheduledTasks.length > 0 && (
+                <div className="mb-6 animate-slideUp">
+                    <div className="time-period">
+                        <span className="time-period-icon">📌</span>
+                        <span className="time-period-label">No Time Set</span>
+                        <span className="time-period-count">{unscheduledTasks.length}</span>
+                    </div>
+                    <div className="space-y-2">
+                        {unscheduledTasks.map(task => (
+                            <TaskItem
+                                key={task.id}
+                                task={task}
+                                onEdit={onEditTask}
+                            />
+                        ))}
+                    </div>
+                </div>
+            )}
 
             {/* Empty states */}
             {activeChecklist.tasks.length === 0 && (

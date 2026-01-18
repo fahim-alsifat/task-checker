@@ -33,9 +33,8 @@ const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, editingTask }) =
     const [notes, setNotes] = useState('');
     const [errors, setErrors] = useState<{ name?: string }>({});
 
-    // Time limit
-    const [hasTimeLimit, setHasTimeLimit] = useState(false);
-    const [timeLimit, setTimeLimit] = useState(30); // Default 30 minutes
+    // Has scheduled time toggle
+    const [hasTime, setHasTime] = useState(true);
 
     // New category form
     const [showNewCategory, setShowNewCategory] = useState(false);
@@ -47,19 +46,17 @@ const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, editingTask }) =
         if (isOpen && activeChecklist) {
             if (editingTask) {
                 setName(editingTask.name);
-                setScheduledTime(editingTask.scheduledTime);
+                setHasTime(!!editingTask.scheduledTime);
+                setScheduledTime(editingTask.scheduledTime || '09:00');
                 setCategoryId(editingTask.categoryId);
                 setPriority(editingTask.priority || 'normal');
                 setNotes(editingTask.notes || '');
-                setHasTimeLimit(!!editingTask.timeLimit);
-                setTimeLimit(editingTask.timeLimit || 30);
             } else {
                 setName('');
+                setHasTime(true);
                 setScheduledTime('09:00');
                 setCategoryId(activeChecklist.categories[0]?.id || '');
                 setNotes('');
-                setHasTimeLimit(false);
-                setTimeLimit(30);
             }
             setErrors({});
             setShowNewCategory(false);
@@ -106,11 +103,10 @@ const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, editingTask }) =
 
         const taskData = {
             name: name.trim(),
-            scheduledTime,
+            scheduledTime: hasTime ? scheduledTime : undefined,
             categoryId,
             priority,
             notes: notes.trim() || undefined,
-            timeLimit: hasTimeLimit ? timeLimit : undefined,
             status: editingTask?.status || 'pending' as const,
         };
 
@@ -172,15 +168,38 @@ const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, editingTask }) =
                     {/* Time and Category */}
                     <div className="grid grid-cols-2 gap-4">
                         <div>
-                            <label className="block text-sm text-white/60 mb-1.5">
-                                Time
-                            </label>
-                            <input
-                                type="time"
-                                value={scheduledTime}
-                                onChange={(e) => setScheduledTime(e.target.value)}
-                                className="input"
-                            />
+                            <div className="flex items-center justify-between mb-1.5">
+                                <label className="text-sm text-white/60">
+                                    Time <span className="text-white/30">(optional)</span>
+                                </label>
+                                <button
+                                    type="button"
+                                    onClick={() => setHasTime(!hasTime)}
+                                    className={`
+                                        relative w-9 h-5 rounded-full transition-colors
+                                        ${hasTime ? 'bg-blue-600' : 'bg-white/20'}
+                                    `}
+                                >
+                                    <span
+                                        className={`
+                                            absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white transition-transform
+                                            ${hasTime ? 'translate-x-4' : 'translate-x-0'}
+                                        `}
+                                    />
+                                </button>
+                            </div>
+                            {hasTime ? (
+                                <input
+                                    type="time"
+                                    value={scheduledTime}
+                                    onChange={(e) => setScheduledTime(e.target.value)}
+                                    className="input"
+                                />
+                            ) : (
+                                <div className="input bg-white/5 text-white/30 cursor-not-allowed">
+                                    No time set
+                                </div>
+                            )}
                         </div>
 
                         <div>
@@ -199,61 +218,6 @@ const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, editingTask }) =
                                 ))}
                             </select>
                         </div>
-                    </div>
-
-                    {/* Time Limit */}
-                    <div>
-                        <div className="flex items-center justify-between mb-2">
-                            <label className="text-sm text-white/60">
-                                Time Limit <span className="text-white/30">(optional)</span>
-                            </label>
-                            <button
-                                type="button"
-                                onClick={() => setHasTimeLimit(!hasTimeLimit)}
-                                className={`
-                                    relative w-10 h-5 rounded-full transition-colors
-                                    ${hasTimeLimit ? 'bg-blue-600' : 'bg-white/20'}
-                                `}
-                            >
-                                <span
-                                    className={`
-                                        absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white transition-transform
-                                        ${hasTimeLimit ? 'translate-x-5' : 'translate-x-0'}
-                                    `}
-                                />
-                            </button>
-                        </div>
-                        {hasTimeLimit && (
-                            <div className="flex items-center gap-3 animate-fadeIn">
-                                <input
-                                    type="number"
-                                    min="1"
-                                    max="480"
-                                    value={timeLimit}
-                                    onChange={(e) => setTimeLimit(Math.max(1, Math.min(480, parseInt(e.target.value) || 1)))}
-                                    className="input w-24 text-center"
-                                />
-                                <span className="text-sm text-white/60">minutes</span>
-                                <div className="flex gap-2 ml-auto">
-                                    {[15, 30, 60].map(mins => (
-                                        <button
-                                            key={mins}
-                                            type="button"
-                                            onClick={() => setTimeLimit(mins)}
-                                            className={`
-                                                px-2 py-1 rounded text-xs font-medium transition-all
-                                                ${timeLimit === mins
-                                                    ? 'bg-blue-600 text-white'
-                                                    : 'bg-white/5 text-white/50 hover:text-white hover:bg-white/10'
-                                                }
-                                            `}
-                                        >
-                                            {mins}m
-                                        </button>
-                                    ))}
-                                </div>
-                            </div>
-                        )}
                     </div>
 
                     {/* Priority selector */}

@@ -128,6 +128,7 @@ export const useTaskNotifications = (
 
                 checklist.tasks.forEach(task => {
                     if (task.status === 'completed') return;
+                    if (!task.scheduledTime) return; // Skip tasks without scheduled time
 
                     // Parse task time
                     const [taskHours, taskMinutes] = task.scheduledTime.split(':').map(Number);

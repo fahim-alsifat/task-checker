@@ -116,7 +116,7 @@ const TaskItem: React.FC<TaskItemProps> = ({ task, onEdit, isCurrentTask, isUpco
                     <div className="flex items-center gap-3 mt-1.5 text-xs text-white/40">
                         <span className="flex items-center gap-1">
                             <ClockIcon />
-                            {formatTime(task.scheduledTime)}
+                            {task.scheduledTime ? formatTime(task.scheduledTime) : 'No time'}
                         </span>
 
                         {isCompleted && task.completedAt && (

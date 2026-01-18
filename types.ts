@@ -13,12 +13,11 @@ export interface Category {
 export interface Task {
     id: string;
     name: string;
-    scheduledTime: string; // "HH:mm" format (24-hour)
+    scheduledTime?: string; // Optional "HH:mm" format (24-hour)
     categoryId: string; // References Category.id
     priority: TaskPriority; // high = 3 notifications, medium = 2, normal = 1
     status: TaskStatus;
     notes?: string;
-    timeLimit?: number; // Optional time limit in minutes
     createdAt: string;
     completedAt?: string;
 }
@@ -109,9 +108,14 @@ export const getRandomColor = (): string => {
     return CHECKLIST_COLORS[Math.floor(Math.random() * CHECKLIST_COLORS.length)];
 };
 
-// Sort tasks by time
+// Sort tasks by time (tasks without time go to end)
 export const sortTasksByTime = (tasks: Task[]): Task[] => {
-    return [...tasks].sort((a, b) => a.scheduledTime.localeCompare(b.scheduledTime));
+    return [...tasks].sort((a, b) => {
+        if (!a.scheduledTime && !b.scheduledTime) return 0;
+        if (!a.scheduledTime) return 1;
+        if (!b.scheduledTime) return -1;
+        return a.scheduledTime.localeCompare(b.scheduledTime);
+    });
 };
 
 // Get today's date as YYYY-MM-DD
