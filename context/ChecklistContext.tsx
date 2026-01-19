@@ -33,6 +33,10 @@ interface ChecklistContextType {
     deleteTask: (taskId: string) => void;
     toggleTaskStatus: (taskId: string) => void;
     reorderTasks: (taskIds: string[]) => void;
+
+    // Export/Import operations
+    exportChecklistAsJson: (id: string) => void;
+    importChecklistFromJson: (jsonData: string) => boolean;
 }
 
 const ChecklistContext = createContext<ChecklistContextType | undefined>(undefined);
@@ -352,6 +356,88 @@ export const ChecklistProvider: React.FC<ChecklistProviderProps> = ({ children }
         ));
     }, [activeChecklistId]);
 
+    // Export checklist as JSON file
+    const exportChecklistAsJson = useCallback((id: string) => {
+        const checklist = checklists.find(c => c.id === id);
+        if (!checklist) return;
+
+        const exportData = {
+            version: 1,
+            exportedAt: new Date().toISOString(),
+            checklist: {
+                name: checklist.name,
+                color: checklist.color,
+                autoReset: checklist.autoReset,
+                notifications: checklist.notifications,
+                categories: checklist.categories,
+                tasks: checklist.tasks,
+            }
+        };
+
+        const jsonString = JSON.stringify(exportData, null, 2);
+        const blob = new Blob([jsonString], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `${checklist.name.replace(/[^a-zA-Z0-9]/g, '_')}.json`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+    }, [checklists]);
+
+    // Import checklist from JSON
+    const importChecklistFromJson = useCallback((jsonData: string): boolean => {
+        try {
+            const data = JSON.parse(jsonData);
+
+            if (!data.checklist || !data.checklist.name) {
+                console.error('Invalid checklist JSON format');
+                return false;
+            }
+
+            const importedChecklist: Checklist = {
+                id: generateId(),
+                name: data.checklist.name,
+                color: data.checklist.color || getRandomColor(),
+                autoReset: data.checklist.autoReset ?? false,
+                notifications: data.checklist.notifications ?? true,
+                createdAt: new Date().toISOString(),
+                categories: (data.checklist.categories || DEFAULT_CATEGORIES).map((cat: Category) => ({
+                    ...cat,
+                    id: generateId(),
+                })),
+                tasks: [],
+            };
+
+            // Map old category IDs to new ones
+            const categoryIdMap = new Map<string, string>();
+            if (data.checklist.categories) {
+                data.checklist.categories.forEach((oldCat: Category, index: number) => {
+                    categoryIdMap.set(oldCat.id, importedChecklist.categories[index].id);
+                });
+            }
+
+            // Import tasks with new IDs
+            importedChecklist.tasks = (data.checklist.tasks || []).map((task: Task) => ({
+                ...task,
+                id: generateId(),
+                categoryId: categoryIdMap.get(task.categoryId) || importedChecklist.categories[0]?.id || '',
+                status: 'pending' as const,
+                completedAt: undefined,
+            }));
+
+            setChecklists(prev => [...prev, importedChecklist]);
+            setActiveChecklistId(importedChecklist.id);
+
+            return true;
+        } catch (e) {
+            console.error('Failed to import checklist:', e);
+            return false;
+        }
+    }, []);
+
     return (
         <ChecklistContext.Provider
             value={{
@@ -375,6 +461,8 @@ export const ChecklistProvider: React.FC<ChecklistProviderProps> = ({ children }
                 deleteTask,
                 toggleTaskStatus,
                 reorderTasks,
+                exportChecklistAsJson,
+                importChecklistFromJson,
             }}
         >
             {children}

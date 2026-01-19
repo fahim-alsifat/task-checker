@@ -273,7 +273,7 @@ const TaskList: React.FC<TaskListProps> = ({ onEditTask }) => {
                 <div className="empty-state">
                     <div className="empty-state-icon">✨</div>
                     <div className="empty-state-title">No tasks yet</div>
-                    <div className="empty-state-desc">Click the "Add Task" button to create your first task.</div>
+                    <div className="empty-state-desc">Click the &quot;Add Task&quot; button to create your first task.</div>
                 </div>
             )}
 

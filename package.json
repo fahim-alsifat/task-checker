@@ -1,12 +1,18 @@
 {
   "name": "task-checker",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "private": true,
+  "main": "electron/main.js",
+  "author": "Task Checker",
+  "description": "A beautiful task management and checklist application",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "electron:dev": "concurrently -k \"npm run dev\" \"wait-on http://localhost:3000 && cross-env NODE_ENV=development electron .\"",
+    "electron:build": "npm run build && electron-builder --win",
+    "postinstall": "electron-builder install-app-deps"
   },
   "dependencies": {
     "next": "^14.2.0",
@@ -18,10 +24,62 @@
     "@types/react": "^18.2.0",
     "@types/react-dom": "^18.2.0",
     "autoprefixer": "^10.4.0",
+    "concurrently": "^8.2.0",
+    "cross-env": "^7.0.3",
+    "electron": "^28.0.0",
+    "electron-builder": "^24.9.0",
     "eslint": "^8.0.0",
     "eslint-config-next": "^14.2.0",
     "postcss": "^8.4.0",
     "tailwindcss": "^3.4.0",
-    "typescript": "^5.0.0"
+    "typescript": "^5.0.0",
+    "wait-on": "^7.2.0"
+  },
+  "build": {
+    "appId": "com.taskchecker.app",
+    "productName": "Task Checker",
+    "copyright": "Copyright © 2026 Task Checker",
+    "directories": {
+      "output": "dist",
+      "buildResources": "build"
+    },
+    "files": [
+      "electron/**/*",
+      "out/**/*",
+      "build/**/*"
+    ],
+    "asar": false,
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "build/icon.png",
+      "publisherName": "Task Checker"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "installerIcon": "build/icon.png",
+      "uninstallerIcon": "build/icon.png",
+      "installerHeaderIcon": "build/icon.png",
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Task Checker"
+    },
+    "portable": {
+      "artifactName": "Task-Checker-Portable-${version}.${ext}"
+    }
   }
 }
