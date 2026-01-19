@@ -5,6 +5,22 @@ import { Task, Checklist } from '@/types';
 
 export type NotificationPermission = 'default' | 'granted' | 'denied';
 
+// Electron API type declaration
+declare global {
+    interface Window {
+        electronAPI?: {
+            showNotification: (title: string, body: string) => Promise<void>;
+            isElectron: boolean;
+            platform: string;
+        };
+    }
+}
+
+// Check if running in Electron
+const isElectron = (): boolean => {
+    return typeof window !== 'undefined' && !!window.electronAPI?.isElectron;
+};
+
 interface UseNotificationsReturn {
     permission: NotificationPermission;
     isSupported: boolean;
@@ -19,14 +35,26 @@ export const useNotifications = (): UseNotificationsReturn => {
 
     // Check support and permission on mount
     useEffect(() => {
-        if (typeof window !== 'undefined' && 'Notification' in window) {
-            setIsSupported(true);
-            setPermission(Notification.permission as NotificationPermission);
+        if (typeof window !== 'undefined') {
+            // In Electron, notifications are always supported and granted
+            if (isElectron()) {
+                setIsSupported(true);
+                setPermission('granted');
+            } else if ('Notification' in window) {
+                setIsSupported(true);
+                setPermission(Notification.permission as NotificationPermission);
+            }
         }
     }, []);
 
     // Request permission
     const requestPermission = useCallback(async (): Promise<boolean> => {
+        // In Electron, permission is always granted
+        if (isElectron()) {
+            setPermission('granted');
+            return true;
+        }
+
         if (!isSupported) return false;
 
         try {
@@ -38,19 +66,24 @@ export const useNotifications = (): UseNotificationsReturn => {
         }
     }, [isSupported]);
 
-    // Send notification
+    // Send notification - uses Electron API when available
     const sendNotification = useCallback((title: string, options?: NotificationOptions) => {
-        if (!isSupported || permission !== 'granted') return;
+        if (!isSupported) return;
 
         try {
-            const notification = new Notification(title, {
-                icon: '/favicon.ico',
-                badge: '/favicon.ico',
-                ...options,
-            });
-
-            // Auto close after 5 seconds
-            setTimeout(() => notification.close(), 5000);
+            // Use Electron native notifications if available
+            if (isElectron() && window.electronAPI) {
+                window.electronAPI.showNotification(title, options?.body || '');
+            } else if (permission === 'granted') {
+                // Browser notification
+                const notification = new Notification(title, {
+                    icon: '/favicon.ico',
+                    badge: '/favicon.ico',
+                    ...options,
+                });
+                // Auto close after 5 seconds
+                setTimeout(() => notification.close(), 5000);
+            }
         } catch (error) {
             console.error('Failed to send notification:', error);
         }
@@ -112,12 +145,12 @@ export const useTaskNotifications = (
         }
 
         const checkTasks = () => {
-            // Read permission directly
-            const currentPermission = typeof window !== 'undefined' && 'Notification' in window
-                ? Notification.permission
-                : 'default';
+            // In Electron, we always have permission. In browser, check Notification API
+            const hasPermission = isElectron() || (
+                typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted'
+            );
 
-            if (currentPermission !== 'granted') return;
+            if (!hasPermission) return;
 
             const now = new Date();
             const currentHours = now.getHours();
@@ -166,13 +199,22 @@ export const useTaskNotifications = (
                                     ? '⚡ 2 min:'
                                     : '🔥 5 min:';
 
+                            const title = `${prefix} ${task.name}`;
+                            const body = `${task.scheduledTime} • ${checklist.name}${priority !== 'normal' ? ` • ${priority.toUpperCase()} priority` : ''}`;
+
                             console.log(`[Notifications] 🔔 Sending ${minutesBefore}min notification for:`, task.name);
                             try {
-                                new Notification(`${prefix} ${task.name}`, {
-                                    body: `${task.scheduledTime} • ${checklist.name}${priority !== 'normal' ? ` • ${priority.toUpperCase()} priority` : ''}`,
-                                    icon: '/favicon.ico',
-                                    tag: `${task.id}-${minutesBefore}`,
-                                });
+                                // Use Electron native notifications if available
+                                if (isElectron() && window.electronAPI) {
+                                    window.electronAPI.showNotification(title, body);
+                                } else {
+                                    // Browser notification
+                                    new Notification(title, {
+                                        body,
+                                        icon: '/favicon.ico',
+                                        tag: `${task.id}-${minutesBefore}`,
+                                    });
+                                }
                                 notifiedTasks.current.add(notificationKey);
                                 saveNotifiedTasks();
                             } catch (err) {
